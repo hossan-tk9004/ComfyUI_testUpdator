@@ -10,7 +10,7 @@
 以下のように、`ComfyUI_testUpdator.bat` を `ComfyUI_windows_portable` と同じ階層に置いてください。
 
 ```text
-D:\RD\AITools\ComfyUI\
+<任意の配置先>\
 ├─ ComfyUI_testUpdator.bat
 └─ ComfyUI_windows_portable\
 ```
@@ -26,7 +26,7 @@ D:\RD\AITools\ComfyUI\
 実行後の構成は次のようになります。
 
 ```text
-D:\RD\AITools\ComfyUI\
+<任意の配置先>\
 ├─ ComfyUI_testUpdator.bat
 ├─ ComfyUI_windows_portable\
 └─ ComfyUI_windows_portable_test\
@@ -37,9 +37,9 @@ D:\RD\AITools\ComfyUI\
 容量節約のため、以下のフォルダはテスト環境へコピーされません。
 
 ```text
-ComfyUI\models
-ComfyUI\input
-ComfyUI\output
+.\ComfyUI_windows_portable\ComfyUI\models
+.\ComfyUI_windows_portable\ComfyUI\input
+.\ComfyUI_windows_portable\ComfyUI\output
 ```
 
 代わりに、テスト環境側には元環境を参照する **ジャンクション** が作成されます。
