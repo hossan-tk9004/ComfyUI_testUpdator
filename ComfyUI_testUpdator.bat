@@ -3,14 +3,19 @@ setlocal EnableExtensions
 
 rem ============================================================
 rem ComfyUI_testUpdator.bat
+rem Version: 1.1
+rem Updated: 2026-08-24
 rem
 rem 1. Clone ComfyUI_windows_portable to ComfyUI_windows_portable_test
-rem 2. Exclude models / input / output from copy
-rem 3. Create junctions to the original folders
-rem 4. Run the stable ComfyUI updater inside the test environment
+rem    excluding models / input / output
+rem 2. Run the stable ComfyUI updater inside the test environment
+rem 3. Remove models / input / output created by the updater, if any
+rem 4. Create junctions from the test environment to the original folders
 rem
 rem Place this BAT next to ComfyUI_windows_portable.
 rem ============================================================
+
+set "SCRIPT_VERSION=1.1"
 
 set "BASE=%~dp0"
 set "SRC=%BASE%ComfyUI_windows_portable"
@@ -21,11 +26,15 @@ set "SRC_INPUT=%SRC%\ComfyUI\input"
 set "SRC_OUTPUT=%SRC%\ComfyUI\output"
 
 set "DST_COMFYUI=%DST%\ComfyUI"
+set "DST_MODELS=%DST_COMFYUI%\models"
+set "DST_INPUT=%DST_COMFYUI%\input"
+set "DST_OUTPUT=%DST_COMFYUI%\output"
+
 set "STABLE_UPDATER=%DST%\update\update_comfyui_stable.bat"
 
 echo.
 echo ============================================================
-echo ComfyUI Test Environment Updater
+echo ComfyUI Test Environment Updater v%SCRIPT_VERSION%
 echo ============================================================
 echo Source      : %SRC%
 echo Destination : %DST%
@@ -98,25 +107,6 @@ if not exist "%DST_COMFYUI%\" (
 )
 
 rem ------------------------------------------------------------
-rem Create junctions
-rem ------------------------------------------------------------
-
-echo.
-echo [2/5] Creating models junction...
-mklink /J "%DST_COMFYUI%\models" "%SRC_MODELS%"
-if errorlevel 1 goto :partial_failure
-
-echo.
-echo [3/5] Creating input junction...
-mklink /J "%DST_COMFYUI%\input" "%SRC_INPUT%"
-if errorlevel 1 goto :partial_failure
-
-echo.
-echo [4/5] Creating output junction...
-mklink /J "%DST_COMFYUI%\output" "%SRC_OUTPUT%"
-if errorlevel 1 goto :partial_failure
-
-rem ------------------------------------------------------------
 rem Validate stable updater
 rem ------------------------------------------------------------
 
@@ -125,17 +115,16 @@ if not exist "%STABLE_UPDATER%" (
     echo [ERROR] Stable updater was not found:
     echo         %STABLE_UPDATER%
     echo.
-    echo The test environment was created successfully,
-    echo but ComfyUI was NOT updated.
+    echo The test environment was created, but ComfyUI was NOT updated.
     goto :failed
 )
 
 rem ------------------------------------------------------------
-rem Run stable updater in test environment
+rem Run stable updater BEFORE creating junctions
 rem ------------------------------------------------------------
 
 echo.
-echo [5/5] Running ComfyUI stable updater...
+echo [2/5] Running ComfyUI stable updater...
 echo.
 echo ------------------------------------------------------------
 echo %STABLE_UPDATER%
@@ -155,6 +144,9 @@ if not "%UPDATE_EXIT%"=="0" (
     echo The test environment was created, but the stable updater
     echo returned exit code %UPDATE_EXIT%.
     echo.
+    echo Junctions were NOT created because the update did not
+    echo complete successfully.
+    echo.
     echo Test environment:
     echo   %DST%
     echo.
@@ -164,9 +156,68 @@ if not "%UPDATE_EXIT%"=="0" (
     exit /b %UPDATE_EXIT%
 )
 
+rem ------------------------------------------------------------
+rem Remove folders recreated by the updater
+rem ------------------------------------------------------------
+
+echo.
+echo [3/5] Removing folders recreated by the updater...
+
+if exist "%DST_MODELS%\" (
+    echo       Removing test models folder...
+    rmdir /S /Q "%DST_MODELS%"
+    if exist "%DST_MODELS%\" (
+        echo [ERROR] Failed to remove:
+        echo         %DST_MODELS%
+        goto :partial_failure
+    )
+)
+
+if exist "%DST_INPUT%\" (
+    echo       Removing test input folder...
+    rmdir /S /Q "%DST_INPUT%"
+    if exist "%DST_INPUT%\" (
+        echo [ERROR] Failed to remove:
+        echo         %DST_INPUT%
+        goto :partial_failure
+    )
+)
+
+if exist "%DST_OUTPUT%\" (
+    echo       Removing test output folder...
+    rmdir /S /Q "%DST_OUTPUT%"
+    if exist "%DST_OUTPUT%\" (
+        echo [ERROR] Failed to remove:
+        echo         %DST_OUTPUT%
+        goto :partial_failure
+    )
+)
+
+rem ------------------------------------------------------------
+rem Create junctions AFTER the update has completed
+rem ------------------------------------------------------------
+
+echo.
+echo [4/5] Creating models junction...
+mklink /J "%DST_MODELS%" "%SRC_MODELS%"
+if errorlevel 1 goto :partial_failure
+
+echo.
+echo [5/5] Creating input/output junctions...
+
+mklink /J "%DST_INPUT%" "%SRC_INPUT%"
+if errorlevel 1 goto :partial_failure
+
+mklink /J "%DST_OUTPUT%" "%SRC_OUTPUT%"
+if errorlevel 1 goto :partial_failure
+
+rem ------------------------------------------------------------
+rem Finish
+rem ------------------------------------------------------------
+
 echo.
 echo ============================================================
-echo SUCCESS
+echo SUCCESS - v%SCRIPT_VERSION%
 echo ============================================================
 echo.
 echo Test environment created and updated:
